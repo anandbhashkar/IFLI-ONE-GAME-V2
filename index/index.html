@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One IndiaFirst Life - Culture Wheel Game</title>
+    <style>
+        :root {
+            --primary-blue: #0A3977;
+            --light-blue: #0093E9;
+            --orange: #FF6F00;
+            --bg-dark: #020b18;
+            --white: #FFFFFF;
+            /* Glassmorphism Variables */
+            --glass-bg: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-shine: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at 50% 30%, #08254d 0%, var(--bg-dark) 100%);
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            padding: 30px 20px;
+            position: relative;
+        }
+
+        /* Ambient background glow elements to enhance the glass transparency effect */
+        body::before, body::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+        body::before {
+            top: 15%;
+            left: 10%;
+            background: var(--light-blue);
+        }
+        body::after {
+            bottom: 10%;
+            right: 10%;
+            background: var(--orange);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            z-index: 10;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 15px 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--white);
+            text-shadow: 0 0 15px rgba(255,255,255,0.2);
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 1rem;
+            color: #a0c4f2;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 50px;
+            max-width: 1400px;
+            width: 100%;
+            flex: 1;
+            z-index: 5;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 680px;
+            height: 680px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            filter: drop-shadow(0 20px 45px rgba(0, 0, 0, 0.6));
+        }
+
+        /* Layer 1: Brand Asset Image */
+        .wheel-artwork {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Layer 2: Interactive Dynamic SVG Vector Overlay Layer */
+        .wheel-overlay-svg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 2;
+        }
+
+        .mask-sector {
+            fill: #03142B;
+            stroke: rgba(255, 255, 255, 0.12);
+            stroke-width: 2px;
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .mask-sector.revealed {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Glassmorphic Number Target Badges */
+        .slice-label-circle {
+            fill: rgba(255, 255, 255, 0.15);
+            stroke: rgba(255, 255, 255, 0.4);
+            stroke-width: 1.5px;
+            cursor: pointer;
+        }
+
+        .slice-label-text {
+            fill: #FFFFFF;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 19px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: central;
+            cursor: pointer;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .hidden-ui-node {
+            display: none;
+        }
+
+        /* Premium Glassmorphism Card Deck Sidebar */
+        .dock-area {
+            flex: 1;
+            max-width: 480px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 25px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            display: flex;
+            flex-direction: column;
+            height: 680px;
+        }
+
+        .dock-header {
+            font-size: 1.25rem;
+            font-weight: bold;
+            text-align: center;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 20px;
+            color: #00d2ff;
+        }
+
+        .items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 8px;
+        }
+
+        .items-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .items-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .items-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+        }
+
+        /* Glassmorphic Pill Cards */
+        .draggable-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            cursor: grab;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .draggable-card:hover {
+            transform: scale(1.02) translateX(4px);
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .draggable-card:active {
+            cursor: grabbing;
+        }
+
+        .card-text {
+            font-size: 0.95rem;
+            font-weight: 500;
+            line-height: 1.4;
+            letter-spacing: 0.3px;
+        }
+
+        /* Drag Proxy Visual Node */
+        #dragProxy {
+            position: fixed;
+            pointer-events: none;
+            padding: 14px 24px;
+            background: rgba(10, 57, 119, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 12px;
+            font-weight: bold;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            display: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            align-items: center;
+        }
+
+        .scoreboard {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--glass-border);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .score-val { color: #00ffcc; text-shadow: 0 0 10px rgba(0,255,204,0.3); }
+        .error-val { color: #ff5252; text-shadow: 0 0 10px rgba(255,82,82,0.3); }
+
+        /* End Game Success Modal */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(2, 11, 24, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .modal.active {
+            opacity: 1; pointer-events: auto;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 28px;
+            padding: 45px;
+            text-align: center;
+            max-width: 525px;
+            width: 90%;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+            transform: scale(0.85);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal h2 {
+            font-size: 2.6rem;
+            color: #fff;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        .modal p {
+            font-size: 1.15rem;
+            color: #b4d2f9;
+            margin-bottom: 35px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            background: linear-gradient(90deg, #ff6f00 0%, #ff9e00 100%);
+            border: none;
+            padding: 16px 45px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            border-radius: 35px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(255,111,0,0.4);
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(255,111,0,0.6);
+        }
+
+        @media (max-width: 1100px) {
+            .game-container { flex-direction: column; gap: 25px; }
+            .wheel-container { width: 600px; height: 600px; }
+            .dock-area { width: 100%; max-width: 600px; height: 350px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>One IndiaFirst Life</h1>
+        <p>Drag and drop the core values onto their corresponding numbers on the wheel!</p>
+    </header>
+
+    <div class="game-container">
+        <div class="wheel-container" id="dropZoneFrame">
+            <img class="wheel-artwork" src="wheel.png" alt="Culture Wheel Base Template">
+            
+            <svg class="wheel-overlay-svg" viewBox="0 0 680 680" id="vectorOverlayLayer"></svg>
+        </div>
+
+        <div class="dock-area">
+            <div class="dock-header">Corporate Core Pillars</div>
+            <div class="items-list" id="itemsDock"></div>
+            <div class="scoreboard">
+                <div>Completed: <span id="score" class="score-val">0</span>/10</div>
+                <div>Mistakes: <span id="errors" class="error-val">0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dragProxy">
+        <span id="proxyText"></span>
+    </div>
+
+    <div class="modal" id="winModal">
+        <div class="modal-content">
+            <h2>Outstanding!</h2>
+            <p>You have successfully mapped all 10 corporate core pillars of One IndiaFirst Life.</p>
+            <button class="btn" onclick="resetGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const SEQUENCE_DATA = [
+            { id: 1, text: "We Listen" },
+            { id: 2, text: "We > I" },
+            { id: 3, text: "Praise in Public. Reprimand in Private." },
+            { id: 4, text: "Keep Customer Experience at the Core" },
+            { id: 5, text: "Talk More. Write When Required." },
+            { id: 6, text: "Like Knowledge. Share Intelligence. Subscribe to Reading." },
+            { id: 7, text: "Brainstorm Regularly: Innovate, Adapt, Excel." },
+            { id: 8, text: "Celebrate Together." },
+            { id: 9, text: "Take Full Accountability." },
+            { id: 10, text: "Enjoy the 'One Indiafirst Life' Experience!" }
+        ];
+
+        let solvedSlices = {}; 
+        let score = 0;
+        let errors = 0;
+        let activeDragItem = null;
+        let isDragging = false;
+
+        // --- HARDWARE SYNTHESIZER AUDIO ENGINE ---
+        const AudioEngine = {
+            ctx: null,
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+            playSuccess() {
+                this.init(); const now = this.ctx.currentTime;
+                const osc1 = this.ctx.createOscillator(); const osc2 = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc1.type = 'triangle'; osc1.frequency.setValueAtTime(330, now); osc1.frequency.exponentialRampToValueAtTime(660, now + 0.15);
+                osc2.type = 'sine'; osc2.frequency.setValueAtTime(440, now); osc2.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+                gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc1.connect(gain); osc2.connect(gain); gain.connect(this.ctx.destination);
+                osc1.start(now); osc2.start(now); osc1.stop(now + 0.4); osc2.stop(now + 0.4);
+            },
+            playError() {
+                this.init(); const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(140, now); osc.frequency.setValueAtTime(110, now + 0.08);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.25);
+            },
+            playWin() {
+                this.init(); const now = this.ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, now + (idx * 0.1));
+                    gain.gain.setValueAtTime(0.15, now + (idx * 0.1)); gain.gain.exponentialRampToValueAtTime(0.01, now + (idx * 0.1) + 0.4);
+                    osc.connect(gain); gain.connect(this.ctx.destination);
+                    osc.start(now + (idx * 0.1)); osc.stop(now + (idx * 0.1) + 0.4);
+                });
+            }
+        };
+
+        // --- MATH-DRIVEN SVG PATH BUILDER ---
+        function createSvgSlicesMasks() {
+            const svgNode = document.getElementById("vectorOverlayLayer");
+            svgNode.innerHTML = ""; 
+            
+            const cx = 340, cy = 340, rOuter = 328, rInner = 160; 
+            const totalSlices = 10;
+            const angleStep = 360 / totalSlices;
+
+            for(let i=0; i<totalSlices; i++) {
+                const item = SEQUENCE_DATA[i];
+                
+                // Align index 1 directly up at the top vertical axis
+                const startAngleDeg = -90 + (i * angleStep);
+                const endAngleDeg = startAngleDeg + angleStep;
+                
+                const startRad = (startAngleDeg * Math.PI) / 180;
+                const endRad = (endAngleDeg * Math.PI) / 180;
+                const midRad = ((startAngleDeg + angleStep / 2) * Math.PI) / 180;
+
+                const x1Outer = cx + rOuter * Math.cos(startRad);
+                const y1Outer = cy + rOuter * Math.sin(startRad);
+                const x2Outer = cx + rOuter * Math.cos(endRad);
+                const y2Outer = cy + rOuter * Math.sin(endRad);
+                
+                const x1Inner = cx + rInner * Math.cos(endRad);
+                const y1Inner = cy + rInner * Math.sin(endRad);
+                const x2Inner = cx + rInner * Math.cos(startRad);
+                const y2Inner = cy + rInner * Math.sin(startRad);
+
+                // Segment string instructions mapping the donut matrix
+                const pathString = `M ${x1Outer} ${y1Outer} A ${rOuter} ${rOuter} 0 0 1 ${x2Outer} ${y2Outer} L ${x1Inner} ${y1Inner} A ${rInner} ${rInner} 0 0 0 ${x2Inner} ${y2Inner} Z`;
+
+                const pathNode = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                pathNode.setAttribute("d", pathString);
+                pathNode.setAttribute("class", "mask-sector");
+                pathNode.setAttribute("id", `slice-mask-${item.id}`);
+                svgNode.appendChild(pathNode);
+
+                // Coordinates for positioning target badges
+                const rLabelDist = (rOuter + rInner) / 2;
+                const labelX = cx + rLabelDist * Math.cos(midRad);
+                const labelY = cy + rLabelDist * Math.sin(midRad);
+
+                // Frosted glass target badge circle
+                const labelCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                labelCircle.setAttribute("cx", labelX);
+                labelCircle.setAttribute("cy", labelY);
+                labelCircle.setAttribute("r", "22");
+                labelCircle.setAttribute("class", "slice-label-circle");
+                labelCircle.setAttribute("id", `slice-circle-${item.id}`);
+                svgNode.appendChild(labelCircle);
+
+                // Badge text node elements
+                const labelText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                labelText.setAttribute("x", labelX);
+                labelText.setAttribute("y", labelY);
+                labelText.setAttribute("class", "slice-label-text");
+                labelText.setAttribute("id", `slice-text-${item.id}`);
+                labelText.textContent = item.id;
+                svgNode.appendChild(labelText);
+            }
+        }
+
+        function updateOverlayVisibility() {
+            SEQUENCE_DATA.forEach(item => {
+                const isSolved = solvedSlices[item.id];
+                const mask = document.getElementById(`slice-mask-${item.id}`);
+                const circle = document.getElementById(`slice-circle-${item.id}`);
+                const text = document.getElementById(`slice-text-${item.id}`);
+
+                if (isSolved) {
+                    if(mask) mask.classList.add("revealed");
+                    if(circle) circle.classList.add("hidden-ui-node");
+                    if(text) text.classList.add("hidden-ui-node");
+                } else {
+                    if(mask) mask.classList.remove("revealed");
+                    if(circle) circle.classList.remove("hidden-ui-node");
+                    if(text) text.classList.remove("hidden-ui-node");
+                }
+            });
+        }
+
+        // --- DRAG INTERFACES CONTROLLER ---
+        function initializeDockList() {
+            const dock = document.getElementById("itemsDock");
+            dock.innerHTML = "";
+            
+            let remainingItems = SEQUENCE_DATA.filter(item => !solvedSlices[item.id]);
+            
+            // Randomize active deck
+            for (let i = remainingItems.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [remainingItems[i], remainingItems[j]] = [remainingItems[j], remainingItems[i]];
+            }
+
+            remainingItems.forEach(item => {
+                const card = document.createElement("div");
+                card.className = "draggable-card";
+                card.dataset.id = item.id;
+                card.innerHTML = `<div class="card-text">${item.text}</div>`;
+                
+                card.addEventListener("mousedown", (e) => handleDragStart(e, item, false));
+                card.addEventListener("touchstart", (e) => handleDragStart(e, item, true), { passive: false });
+                dock.appendChild(card);
+            });
+        }
+
+        function handleDragStart(e, item, isTouch) {
+            AudioEngine.init();
+            activeDragItem = item;
+            isDragging = true;
+
+            const proxy = document.getElementById("dragProxy");
+            document.getElementById("proxyText").textContent = item.text;
+            proxy.style.display = "flex";
+            
+            updateProxyPosition(isTouch ? e.touches[0].clientX : e.clientX, isTouch ? e.touches[0].clientY : e.clientY);
+
+            if (isTouch) {
+                window.addEventListener("touchmove", handleTouchMove, { passive: false });
+                window.addEventListener("touchend", handleTouchEnd);
+                e.preventDefault();
+            } else {
+                window.addEventListener("mousemove", handleMouseMove);
+                window.addEventListener("mouseup", handleMouseUp);
+            }
+        }
+
+        function updateProxyPosition(clientX, clientY) {
+            const proxy = document.getElementById("dragProxy");
+            proxy.style.left = clientX + "px";
+            proxy.style.top = clientY + "px";
+        }
+
+        function handleMouseMove(e) { if(isDragging) updateProxyPosition(e.clientX, e.clientY); }
+        function handleTouchMove(e) { if(isDragging) { updateProxyPosition(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); } }
+
+        function handleMouseUp(e) { processDrop(e.clientX, e.clientY); window.removeEventListener("mousemove", handleMouseMove); window.removeEventListener("mouseup", handleMouseUp); }
+        function handleTouchEnd(e) { 
+            if (e.changedTouches && e.changedTouches.length > 0) processDrop(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+            window.removeEventListener("touchmove", handleTouchMove); window.removeEventListener("touchend", handleTouchEnd); 
+        }
+
+        // --- MATH INTERSECT DETECTOR VALIDATION ---
+        function processDrop(clientX, clientY) {
+            isDragging = false;
+            document.getElementById("dragProxy").style.display = "none";
+            if (!activeDragItem) return;
+
+            const container = document.getElementById("dropZoneFrame");
+            const rect = container.getBoundingClientRect();
+            
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+            
+            const cx = rect.width / 2;
+            const cy = rect.height / 2;
+
+            const dx = x - cx;
+            const dy = y - cy;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            const outerBoundsRadius = rect.width * (328 / 680);
+            const innerBoundsRadius = rect.width * (160 / 680);
+
+            if (distance >= innerBoundsRadius && distance <= outerBoundsRadius + 25) {
+                let angle = Math.atan2(dy, dx);
+                angle += Math.PI / 2; 
+                if (angle < 0) angle += Math.PI * 2;
+
+                const totalSlices = 10;
+                const sliceAngleRange = (Math.PI * 2) / totalSlices;
+                let targetSliceID = Math.floor(angle / sliceAngleRange) + 1;
+                if (targetSliceID > 10) targetSliceID = 1;
+
+                if (targetSliceID === activeDragItem.id) {
+                    solvedSlices[activeDragItem.id] = true;
+                    score++;
+                    document.getElementById("score").textContent = score;
+                    
+                    AudioEngine.playSuccess();
+                    initializeDockList();
+                    updateOverlayVisibility();
+                    
+                    if (score === 10) {
+                        setTimeout(() => {
+                            AudioEngine.playWin();
+                            document.getElementById("winModal").classList.add("active");
+                        }, 400);
+                    }
+                } else {
+                    errors++;
+                    document.getElementById("errors").textContent = errors;
+                    AudioEngine.playError();
+                }
+            }
+            activeDragItem = null;
+        }
+
+        function resetGame() {
+            solvedSlices = {};
+            score = 0; errors = 0;
+            document.getElementById("score").textContent = "0";
+            document.getElementById("errors").textContent = "0";
+            document.getElementById("winModal").classList.remove("active");
+            initializeDockList();
+            updateOverlayVisibility();
+        }
+
+        window.onload = () => {
+            createSvgSlicesMasks();
+            initializeDockList();
+            updateOverlayVisibility();
+        };
+    </script>
+</body>
+</html>
